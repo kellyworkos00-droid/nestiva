@@ -983,6 +983,183 @@ Response:
 
 ---
 
+## Currency & Exchange Rate Endpoints
+
+### 1. Get Currency by Country
+**GET** `/currencies/country/:countryCode`  
+*Public*
+
+Get currency code and symbol for a country. Use 2-letter ISO country code (e.g., US, GB, IN, JP).
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "country_code": "US",
+    "currency_code": "USD",
+    "currency_symbol": "$"
+  }
+}
+```
+
+### 2. Get Currency Symbol
+**GET** `/currencies/:currencyCode/symbol`  
+*Public*
+
+Get the symbol for a currency code.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "currency_code": "EUR",
+    "currency_symbol": "€"
+  }
+}
+```
+
+### 3. Format Price with Currency
+**POST** `/currencies/format-price`  
+*Public*
+
+Format a price amount with currency formatting.
+
+Request:
+```json
+{
+  "amount": 1299.99,
+  "currency": "USD",
+  "locale": "en-US"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "amount": 1299.99,
+    "currency": "USD",
+    "formatted": "$1,299.99",
+    "locale": "en-US"
+  }
+}
+```
+
+### 4. Convert Currency
+**POST** `/currencies/convert`  
+*Public*
+
+Convert amount from one currency to another.
+
+Request:
+```json
+{
+  "amount": 100,
+  "from_currency": "USD",
+  "to_currency": "EUR"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "original_amount": 100,
+    "original_currency": "USD",
+    "converted_amount": 92,
+    "target_currency": "EUR",
+    "exchange_rate": 0.92
+  }
+}
+```
+
+### 5. Get Exchange Rate
+**GET** `/currencies/exchange-rate?from=USD&to=EUR`  
+*Public*
+
+Get exchange rate between two currencies (base: USD).
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "from_currency": "USD",
+    "to_currency": "EUR",
+    "exchange_rate": 0.92
+  }
+}
+```
+
+### 6. Get All Exchange Rates
+**GET** `/currencies/exchange-rates`  
+*Public*
+
+Get all current exchange rates (base currency: USD).
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "base_currency": "USD",
+    "rates": {
+      "USD": 1.0,
+      "EUR": 0.92,
+      "GBP": 0.79,
+      "JPY": 148.5,
+      "INR": 83.12,
+      "AUD": 1.52
+    },
+    "last_updated": "2026-02-04T16:00:00Z"
+  }
+}
+```
+
+### 7. Get Supported Currencies
+**GET** `/currencies/supported`  
+*Public*
+
+Get list of all supported countries and their currencies.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "total": 195,
+    "currencies": [
+      {
+        "country_code": "US",
+        "currency_code": "USD",
+        "currency_symbol": "$"
+      },
+      {
+        "country_code": "GB",
+        "currency_code": "GBP",
+        "currency_symbol": "£"
+      },
+      {
+        "country_code": "JP",
+        "currency_code": "JPY",
+        "currency_symbol": "¥"
+      },
+      {
+        "country_code": "IN",
+        "currency_code": "INR",
+        "currency_symbol": "₹"
+      }
+    ]
+  }
+}
+```
+
+---
+
 ## Message & Conversation Endpoints
 
 ### 1. Start or Get Conversation

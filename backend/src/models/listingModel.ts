@@ -1,6 +1,7 @@
 import { pool } from '../config/database';
 import { Listing } from '../types/index';
 import { NotFoundError } from '../utils/errors';
+import { getCurrencyByCountry } from '../utils/currency';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -78,13 +79,16 @@ export const createListing = async (userData: {
   house_rules: string[];
   cancellation_policy: 'flexible' | 'moderate' | 'strict' | 'super_strict';
   base_price: number;
-  currency: string;
+  currency?: string;
   cleaning_fee: number;
   service_fee_percentage: number;
 }): Promise<Listing> => {
   try {
     const listingId = uuidv4();
     const now = new Date();
+    
+    // Auto-set currency based on country if not provided
+    const currency = userData.currency || getCurrencyByCountry(userData.country);
 
     const result = await pool.query(
       `INSERT INTO listings (
@@ -118,7 +122,7 @@ export const createListing = async (userData: {
         JSON.stringify(userData.house_rules),
         userData.cancellation_policy,
         userData.base_price,
-        userData.currency,
+        currency,
         userData.cleaning_fee,
         userData.service_fee_percentage,
         false, // not published yet
