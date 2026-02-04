@@ -647,6 +647,150 @@ curl -X GET "http://localhost:3001/api/v1/listings/search?city=New%20York&min_pr
 
 ---
 
+## Booking Endpoints
+
+### 1. Create Booking
+**POST** `/bookings`  
+*Protected - Guest*
+
+Request:
+```json
+{
+  "listing_id": "uuid",
+  "check_in_date": "2026-03-01",
+  "check_out_date": "2026-03-05",
+  "number_of_guests": 2,
+  "special_requests": "Late check-in needed",
+  "guest_message": "Looking forward to staying!",
+  "discount_code": "SUMMER2026"
+}
+```
+
+Response (201):
+```json
+{
+  "success": true,
+  "data": {
+    "booking": {
+      "id": "uuid",
+      "listing_id": "uuid",
+      "guest_id": "uuid",
+      "host_id": "uuid",
+      "check_in_date": "2026-03-01T00:00:00Z",
+      "check_out_date": "2026-03-05T00:00:00Z",
+      "number_of_guests": 2,
+      "number_of_nights": 4,
+      "status": "pending",
+      "booking_stage": "awaiting_host",
+      "base_price": 480.00,
+      "cleaning_fee": 25.00,
+      "service_fee": 14.40,
+      "discount_amount": 0,
+      "total_price": 519.40,
+      "currency": "USD",
+      "payment_status": "pending",
+      "created_at": "2026-02-04T12:00:00Z"
+    }
+  }
+}
+```
+
+### 2. Get Booking Details
+**GET** `/bookings/:bookingId`  
+*Protected - Guest or Host*
+
+### 3. Get My Bookings
+**GET** `/bookings/my-bookings?status=confirmed&limit=20&offset=0`  
+*Protected - Guest*
+
+Query Parameters:
+- `status` (optional): pending, confirmed, cancelled, completed
+- `limit` (optional): Default 20
+- `offset` (optional): Default 0
+
+### 4. Get Host Bookings
+**GET** `/bookings/host-bookings?status=pending&limit=20&offset=0`  
+*Protected - Host*
+
+### 5. Get Upcoming Bookings
+**GET** `/bookings/upcoming?limit=10`  
+*Protected - Host*
+
+### 6. Confirm Booking
+**POST** `/bookings/:bookingId/confirm`  
+*Protected - Host*
+
+Request:
+```json
+{
+  "host_response": "Welcome! Looking forward to hosting you."
+}
+```
+
+### 7. Reject Booking
+**POST** `/bookings/:bookingId/reject`  
+*Protected - Host*
+
+### 8. Cancel Booking
+**POST** `/bookings/:bookingId/cancel`  
+*Protected - Guest or Host*
+
+Request:
+```json
+{
+  "cancellation_reason": "Plans changed"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "booking": { ... },
+    "refund_amount": 519.40
+  }
+}
+```
+
+**Cancellation Policies:**
+- **Flexible**: 100% refund if ≥24hrs before check-in
+- **Moderate**: 100% if ≥5 days, 50% if ≥1 day
+- **Strict**: 100% if ≥7 days, 50% if ≥1 day
+- **Super Strict**: 50% if ≥30 days
+
+### 9. Check-in Booking
+**POST** `/bookings/:bookingId/check-in`  
+*Protected - Guest or Host*
+
+### 10. Check-out Booking
+**POST** `/bookings/:bookingId/check-out`  
+*Protected - Guest or Host*
+
+### 11. Get Listing Bookings
+**GET** `/bookings/listing/:listingId?limit=20&offset=0`  
+*Protected - Host*
+
+### 12. Get Listing Stats
+**GET** `/bookings/listing/:listingId/stats`  
+*Protected - Host*
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "totalBookings": 15,
+    "confirmedBookings": 12,
+    "totalRevenue": 6250.50,
+    "averageBookingValue": 520.88,
+    "occupancyRate": 68.5
+  }
+}
+```
+
+---
+
 ## Notes
 
 - All timestamps are in ISO 8601 format (UTC)
@@ -656,3 +800,5 @@ curl -X GET "http://localhost:3001/api/v1/listings/search?city=New%20York&min_pr
 - Profile pictures and documents must be pre-uploaded to S3/CDN
 - Price values must be between 0.01 and 10,000
 - Coordinates must be valid latitude/longitude values
+- Booking prices automatically calculated (base × nights + cleaning + 3% service fee)
+- Availability is checked in real-time to prevent double-booking

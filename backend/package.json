@@ -8,8 +8,9 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "migrate": "postgres-migrations run --config src/migrations/config.js",
-    "migrate:create": "postgres-migrations create",
+    "db:migrate": "node database/run-migrations.js",
+    "db:seed": "node database/run-seeds.js",
+    "db:setup": "npm run db:migrate && npm run db:seed",
     "lint": "eslint src --ext .ts",
     "test": "vitest"
   },
