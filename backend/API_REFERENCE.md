@@ -983,6 +983,256 @@ Response:
 
 ---
 
+## Location-Based Listing Endpoints
+
+### 1. Get Nearby Listings
+**GET** `/listings/search/nearby?latitude=40.7128&longitude=-74.0060&radius=10&limit=20&offset=0`  
+*Public*
+
+Find listings near a specific location. Returns results sorted by distance.
+
+Query Parameters:
+- `latitude` (required): Center latitude (-90 to 90)
+- `longitude` (required): Center longitude (-180 to 180)
+- `radius` (optional): Search radius in kilometers (default: 10, max: 50)
+- `limit` (optional): Results per page (default: 20, max: 100)
+- `offset` (optional): Pagination offset (default: 0)
+- `min_price` (optional): Minimum price filter
+- `max_price` (optional): Maximum price filter
+- `min_rating` (optional): Minimum rating filter
+- `property_type` (optional): Filter by property type
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "center": {
+      "latitude": 40.7128,
+      "longitude": -74.0060
+    },
+    "radius_km": 10,
+    "listings": [
+      {
+        "id": "uuid",
+        "title": "Modern Apartment in Manhattan",
+        "city": "New York",
+        "country": "US",
+        "latitude": 40.7580,
+        "longitude": -73.9855,
+        "distance_km": 5.2,
+        "base_price": 150,
+        "currency": "USD",
+        "average_rating": 4.8,
+        "review_count": 42
+      }
+    ],
+    "total": 156,
+    "limit": 20,
+    "offset": 0
+  }
+}
+```
+
+### 2. Get Listings in Map Bounds
+**GET** `/listings/search/map?bounds=40.7128,-74.0060,40.7614,-73.9776&limit=100`  
+*Public*
+
+Find listings within specified map bounds (viewport). Useful for map-based UI.
+
+Query Parameters:
+- `bounds` (required): Format `south,west,north,east` (e.g., 40.7128,-74.0060,40.7614,-73.9776)
+- `limit` (optional): Results per page (default: 100, max: 500)
+- `offset` (optional): Pagination offset (default: 0)
+- `min_price` (optional): Minimum price filter
+- `max_price` (optional): Maximum price filter
+- `min_rating` (optional): Minimum rating filter
+- `property_type` (optional): Filter by property type
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "bounds": {
+      "south": 40.7128,
+      "west": -74.0060,
+      "north": 40.7614,
+      "east": -73.9776
+    },
+    "center": {
+      "latitude": 40.7371,
+      "longitude": -73.9918
+    },
+    "listings": [
+      {
+        "id": "uuid",
+        "title": "Charming Studio in Brooklyn",
+        "city": "New York",
+        "country": "US",
+        "latitude": 40.7489,
+        "longitude": -73.9680,
+        "base_price": 120,
+        "currency": "USD",
+        "average_rating": 4.6
+      }
+    ],
+    "total": 342,
+    "limit": 100,
+    "offset": 0
+  }
+}
+```
+
+### 3. Get Listings by City
+**GET** `/listings/search/city/:city?country=US&limit=20&offset=0`  
+*Public*
+
+Find all listings in a specific city.
+
+Path Parameters:
+- `city` (required): City name (e.g., "New York", "London", "Tokyo")
+
+Query Parameters:
+- `country` (optional): Filter by country code (e.g., "US", "GB", "JP")
+- `limit` (optional): Results per page (default: 20, max: 100)
+- `offset` (optional): Pagination offset (default: 0)
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "city": "New York",
+    "country": "US",
+    "listings": [
+      {
+        "id": "uuid",
+        "title": "Luxury Penthouse Manhattan",
+        "address": "Fifth Avenue, New York",
+        "base_price": 500,
+        "currency": "USD",
+        "average_rating": 4.9,
+        "review_count": 128
+      }
+    ],
+    "total": 892,
+    "limit": 20,
+    "offset": 0
+  }
+}
+```
+
+### 4. Get Listings by Country
+**GET** `/listings/search/country/:country?limit=50&offset=0`  
+*Public*
+
+Find all listings in a specific country.
+
+Path Parameters:
+- `country` (required): Country code (ISO 2-letter, e.g., "US", "GB", "FR") or full name
+
+Query Parameters:
+- `limit` (optional): Results per page (default: 50, max: 250)
+- `offset` (optional): Pagination offset (default: 0)
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "country": "France",
+    "listings": [
+      {
+        "id": "uuid",
+        "title": "Parisian Apartment Near Eiffel Tower",
+        "city": "Paris",
+        "country": "France",
+        "base_price": 200,
+        "currency": "EUR",
+        "average_rating": 4.7
+      }
+    ],
+    "total": 2341,
+    "limit": 50,
+    "offset": 0
+  }
+}
+```
+
+### 5. Calculate Distance
+**POST** `/listings/search/distance`  
+*Public*
+
+Calculate distance between two geographic points.
+
+Request:
+```json
+{
+  "from_latitude": 40.7128,
+  "from_longitude": -74.0060,
+  "to_latitude": 40.7580,
+  "to_longitude": -73.9855
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "from": {
+      "latitude": 40.7128,
+      "longitude": -74.0060
+    },
+    "to": {
+      "latitude": 40.7580,
+      "longitude": -73.9855
+    },
+    "distance_km": 5.2,
+    "distance_miles": 3.2
+  }
+}
+```
+
+### 6. Get Bounding Box for Radius
+**POST** `/listings/search/bounding-box`  
+*Public*
+
+Calculate bounding box for map queries based on center point and radius.
+
+Request:
+```json
+{
+  "center_latitude": 40.7128,
+  "center_longitude": -74.0060,
+  "radius_km": 5
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "center": {
+      "latitude": 40.7128,
+      "longitude": -74.0060
+    },
+    "radius_km": 5,
+    "bounding_box": {
+      "south": 40.6678,
+      "west": -74.0722,
+      "north": 40.7578,
+      "east": -73.9398
+    },
+    "bounds_string": "40.6678,-74.0722,40.7578,-73.9398"
+  }
+}
+```
+
+---
+
 ## Currency & Exchange Rate Endpoints
 
 ### 1. Get Currency by Country

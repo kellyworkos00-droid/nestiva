@@ -422,3 +422,324 @@ export const softDeleteListing = async (listingId: string): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * Find listings near a location (within radius)
+ */
+export const findNearbyListings = async (
+  centerLat: number,
+  centerLon: number,
+  radiusKm: number = 10,
+  limit: number = 20,
+  offset: number = 0,
+  filters?: {
+    min_price?: number;
+    max_price?: number;
+    min_rating?: number;
+    property_type?: string;
+    amenities?: string[];
+  }
+): Promise<{ listings: (Listing & { distance_km: number })[]; total: number }> => {
+  try {
+    // Using PostGIS distance calculation
+    // Falls back to basic math if PostGIS not available
+    let query = `
+      SELECT *,
+        (6371 * acos(cos(radians($1)) * cos(radians(latitude)) * 
+        cos(radians(longitude) - radians($2)) + 
+        sin(radians($1)) * sin(radians(latitude)))) AS distance_km
+      FROM listings
+      WHERE deleted_at IS NULL AND is_published = true
+    `;
+
+    const values: any[] = [centerLat, centerLon];
+    let paramCount = 3;
+
+    // Add distance filter
+    query += ` AND (6371 * acos(cos(radians($1)) * cos(radians(latitude)) * 
+      cos(radians(longitude) - radians($2)) + 
+      sin(radians($1)) * sin(radians(latitude)))) <= $${paramCount}`;
+    values.push(radiusKm);
+    paramCount++;
+
+    // Add price filters
+    if (filters?.min_price !== undefined) {
+      query += ` AND base_price >= $${paramCount}`;
+      values.push(filters.min_price);
+      paramCount++;
+    }
+    if (filters?.max_price !== undefined) {
+      query += ` AND base_price <= $${paramCount}`;
+      values.push(filters.max_price);
+      paramCount++;
+    }
+
+    // Add rating filter
+    if (filters?.min_rating !== undefined) {
+      query += ` AND average_rating >= $${paramCount}`;
+      values.push(filters.min_rating);
+      paramCount++;
+    }
+
+    // Add property type filter
+    if (filters?.property_type) {
+      query += ` AND property_type = $${paramCount}`;
+      values.push(filters.property_type);
+      paramCount++;
+    }
+
+    // Sort by distance
+    query += ` ORDER BY distance_km ASC`;
+    query += ` LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
+    values.push(limit, offset);
+
+    const result = await pool.query(query, values);
+
+    // Get total count
+    let countQuery = `
+      SELECT COUNT(*) as total FROM listings
+      WHERE deleted_at IS NULL AND is_published = true
+        AND (6371 * acos(cos(radians($1)) * cos(radians(latitude)) * 
+        cos(radians(longitude) - radians($2)) + 
+        sin(radians($1)) * sin(radians(latitude)))) <= $3
+    `;
+
+    const countValues: any[] = [centerLat, centerLon, radiusKm];
+
+    if (filters?.min_price !== undefined) {
+      countQuery += ` AND base_price >= $${countValues.length + 1}`;
+      countValues.push(filters.min_price);
+    }
+    if (filters?.max_price !== undefined) {
+      countQuery += ` AND base_price <= $${countValues.length + 1}`;
+      countValues.push(filters.max_price);
+    }
+    if (filters?.min_rating !== undefined) {
+      countQuery += ` AND average_rating >= $${countValues.length + 1}`;
+      countValues.push(filters.min_rating);
+    }
+    if (filters?.property_type) {
+      countQuery += ` AND property_type = $${countValues.length + 1}`;
+      countValues.push(filters.property_type);
+    }
+
+    const countResult = await pool.query(countQuery, countValues);
+
+    return {
+      listings: result.rows.map(row => ({
+        ...row,
+        amenities: row.amenities || [],
+        house_rules: row.house_rules || [],
+        distance_km: Math.round(row.distance_km * 100) / 100,
+      })),
+      total: parseInt(countResult.rows[0].total),
+    };
+  } catch (error) {
+    console.error('Database error in findNearbyListings:', error);
+    throw error;
+  }
+};
+
+/**
+ * Find listings within map bounds
+ */
+export const findListingsInBounds = async (
+  south: number,
+  west: number,
+  north: number,
+  east: number,
+  limit: number = 100,
+  offset: number = 0,
+  filters?: {
+    min_price?: number;
+    max_price?: number;
+    min_rating?: number;
+    property_type?: string;
+  }
+): Promise<{ listings: Listing[]; total: number }> => {
+  try {
+    let query = `
+      SELECT * FROM listings
+      WHERE deleted_at IS NULL AND is_published = true
+        AND latitude >= $1 AND latitude <= $2
+        AND longitude >= $3 AND longitude <= $4
+    `;
+
+    const values: any[] = [south, north, west, east];
+    let paramCount = 5;
+
+    // Add price filters
+    if (filters?.min_price !== undefined) {
+      query += ` AND base_price >= $${paramCount}`;
+      values.push(filters.min_price);
+      paramCount++;
+    }
+    if (filters?.max_price !== undefined) {
+      query += ` AND base_price <= $${paramCount}`;
+      values.push(filters.max_price);
+      paramCount++;
+    }
+
+    // Add rating filter
+    if (filters?.min_rating !== undefined) {
+      query += ` AND average_rating >= $${paramCount}`;
+      values.push(filters.min_rating);
+      paramCount++;
+    }
+
+    // Add property type filter
+    if (filters?.property_type) {
+      query += ` AND property_type = $${paramCount}`;
+      values.push(filters.property_type);
+      paramCount++;
+    }
+
+    // Sort by rating and recently updated
+    query += ` ORDER BY average_rating DESC, updated_at DESC`;
+    query += ` LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
+    values.push(limit, offset);
+
+    const result = await pool.query(query, values);
+
+    // Get total count
+    let countQuery = `
+      SELECT COUNT(*) as total FROM listings
+      WHERE deleted_at IS NULL AND is_published = true
+        AND latitude >= $1 AND latitude <= $2
+        AND longitude >= $3 AND longitude <= $4
+    `;
+
+    const countValues: any[] = [south, north, west, east];
+
+    if (filters?.min_price !== undefined) {
+      countQuery += ` AND base_price >= $${countValues.length + 1}`;
+      countValues.push(filters.min_price);
+    }
+    if (filters?.max_price !== undefined) {
+      countQuery += ` AND base_price <= $${countValues.length + 1}`;
+      countValues.push(filters.max_price);
+    }
+    if (filters?.min_rating !== undefined) {
+      countQuery += ` AND average_rating >= $${countValues.length + 1}`;
+      countValues.push(filters.min_rating);
+    }
+    if (filters?.property_type) {
+      countQuery += ` AND property_type = $${countValues.length + 1}`;
+      countValues.push(filters.property_type);
+    }
+
+    const countResult = await pool.query(countQuery, countValues);
+
+    return {
+      listings: result.rows.map(row => ({
+        ...row,
+        amenities: row.amenities || [],
+        house_rules: row.house_rules || [],
+      })),
+      total: parseInt(countResult.rows[0].total),
+    };
+  } catch (error) {
+    console.error('Database error in findListingsInBounds:', error);
+    throw error;
+  }
+};
+
+/**
+ * Find listings by city
+ */
+export const findListingsByCity = async (
+  city: string,
+  country?: string,
+  limit: number = 20,
+  offset: number = 0
+): Promise<{ listings: Listing[]; total: number }> => {
+  try {
+    let query = `
+      SELECT * FROM listings
+      WHERE deleted_at IS NULL AND is_published = true
+        AND LOWER(city) = LOWER($1)
+    `;
+
+    const values: any[] = [city];
+
+    if (country) {
+      query += ` AND LOWER(country) = LOWER($${values.length + 1})`;
+      values.push(country);
+    }
+
+    query += ` ORDER BY average_rating DESC, updated_at DESC`;
+    query += ` LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
+    values.push(limit, offset);
+
+    const result = await pool.query(query, values);
+
+    // Get total count
+    let countQuery = `
+      SELECT COUNT(*) as total FROM listings
+      WHERE deleted_at IS NULL AND is_published = true
+        AND LOWER(city) = LOWER($1)
+    `;
+
+    const countValues: any[] = [city];
+
+    if (country) {
+      countQuery += ` AND LOWER(country) = LOWER($${countValues.length + 1})`;
+      countValues.push(country);
+    }
+
+    const countResult = await pool.query(countQuery, countValues);
+
+    return {
+      listings: result.rows.map(row => ({
+        ...row,
+        amenities: row.amenities || [],
+        house_rules: row.house_rules || [],
+      })),
+      total: parseInt(countResult.rows[0].total),
+    };
+  } catch (error) {
+    console.error('Database error in findListingsByCity:', error);
+    throw error;
+  }
+};
+
+/**
+ * Find listings by country
+ */
+export const findListingsByCountry = async (
+  country: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<{ listings: Listing[]; total: number }> => {
+  try {
+    let query = `
+      SELECT * FROM listings
+      WHERE deleted_at IS NULL AND is_published = true
+        AND LOWER(country) = LOWER($1)
+      ORDER BY average_rating DESC, updated_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+
+    const result = await pool.query(query, [country, limit, offset]);
+
+    // Get total count
+    const countResult = await pool.query(
+      `SELECT COUNT(*) as total FROM listings
+       WHERE deleted_at IS NULL AND is_published = true
+         AND LOWER(country) = LOWER($1)`,
+      [country]
+    );
+
+    return {
+      listings: result.rows.map(row => ({
+        ...row,
+        amenities: row.amenities || [],
+        house_rules: row.house_rules || [],
+      })),
+      total: parseInt(countResult.rows[0].total),
+    };
+  } catch (error) {
+    console.error('Database error in findListingsByCountry:', error);
+    throw error;
+  }
+};

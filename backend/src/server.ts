@@ -41,10 +41,12 @@ import reviewRoutes from './routes/reviewRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import messageRoutes from './routes/messageRoutes';
 import currencyRoutes from './routes/currencyRoutes';
+import locationRoutes from './routes/locationRoutes';
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/listings', listingRoutes);
+app.use('/api/v1/listings/search', locationRoutes);
 app.use('/api/v1/bookings', bookingRoutes);
 app.use('/api/v1/reviews', reviewRoutes);
 app.use('/api/v1/payments', paymentRoutes);
