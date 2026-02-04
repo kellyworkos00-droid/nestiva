@@ -983,6 +983,553 @@ Response:
 
 ---
 
+## Message & Conversation Endpoints
+
+### 1. Start or Get Conversation
+**POST** `/messages/conversations`  
+*Protected*
+
+Start a new conversation or retrieve existing one for a listing.
+
+Request:
+```json
+{
+  "listing_id": "uuid",
+  "booking_id": "uuid (optional)"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "conversation": {
+      "id": "uuid",
+      "listing_id": "uuid",
+      "host_id": "uuid",
+      "guest_id": "uuid",
+      "booking_id": "uuid",
+      "status": "active",
+      "last_message_at": null,
+      "last_message_preview": null,
+      "host_archived": false,
+      "guest_archived": false,
+      "created_at": "2026-02-04T12:00:00Z"
+    }
+  },
+  "message": "Conversation started"
+}
+```
+
+### 2. Get User Conversations
+**GET** `/messages/conversations?include_archived=false&limit=50&offset=0`  
+*Protected*
+
+Get list of user's conversations with summary data.
+
+Query Parameters:
+- `include_archived` (boolean): Include archived conversations (default: false)
+- `limit` (number): Results per page (default: 50, max: 100)
+- `offset` (number): Pagination offset (default: 0)
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "conversations": [
+      {
+        "id": "uuid",
+        "listing_id": "uuid",
+        "host_id": "uuid",
+        "guest_id": "uuid",
+        "status": "active",
+        "last_message_at": "2026-02-04T15:30:00Z",
+        "last_message_preview": "Hi, I'm interested in booking your place for...",
+        "host_archived": false,
+        "guest_archived": false,
+        "listing_title": "Beach Villa with Ocean View",
+        "listing_photos": ["url1", "url2"],
+        "host_first_name": "John",
+        "host_last_name": "Doe",
+        "host_profile_picture": "url",
+        "guest_first_name": "Jane",
+        "guest_last_name": "Smith",
+        "guest_profile_picture": "url",
+        "host_unread_count": 0,
+        "guest_unread_count": 2
+      }
+    ],
+    "total": 15
+  }
+}
+```
+
+### 3. Get Conversation Details
+**GET** `/messages/conversations/:conversationId`  
+*Protected*
+
+Get specific conversation details. User must be participant.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "conversation": {
+      "id": "uuid",
+      "listing_id": "uuid",
+      "host_id": "uuid",
+      "guest_id": "uuid",
+      "booking_id": "uuid",
+      "status": "active",
+      "last_message_at": "2026-02-04T15:30:00Z",
+      "created_at": "2026-02-01T10:00:00Z"
+    }
+  }
+}
+```
+
+### 4. Get Conversation Messages
+**GET** `/messages/conversations/:conversationId/messages?limit=50&offset=0&before=messageId`  
+*Protected*
+
+Get messages in a conversation. Returns in chronological order.
+
+Query Parameters:
+- `limit` (number): Results per page (default: 50, max: 100)
+- `offset` (number): Pagination offset (default: 0)
+- `before` (string): Get messages before this message ID (for infinite scroll)
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "messages": [
+      {
+        "id": "uuid",
+        "conversation_id": "uuid",
+        "sender_id": "uuid",
+        "receiver_id": "uuid",
+        "content": "Hi! I'm interested in booking your place for next weekend.",
+        "message_type": "text",
+        "is_read": true,
+        "read_at": "2026-02-04T15:35:00Z",
+        "attachments": [],
+        "metadata": {},
+        "created_at": "2026-02-04T15:30:00Z"
+      }
+    ],
+    "total": 8
+  }
+}
+```
+
+### 5. Send Message
+**POST** `/messages/conversations/:conversationId/messages`  
+*Protected*
+
+Send a message in a conversation. Max 5000 characters.
+
+Request:
+```json
+{
+  "content": "Thanks for your interest! The place is available for those dates.",
+  "message_type": "text",
+  "attachments": ["url1", "url2"],
+  "metadata": {}
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "message": {
+      "id": "uuid",
+      "conversation_id": "uuid",
+      "sender_id": "uuid",
+      "receiver_id": "uuid",
+      "content": "Thanks for your interest! The place is available for those dates.",
+      "message_type": "text",
+      "is_read": false,
+      "attachments": [],
+      "created_at": "2026-02-04T15:32:00Z"
+    }
+  },
+  "message": "Message sent successfully"
+}
+```
+
+### 6. Mark Message as Read
+**PATCH** `/messages/:messageId/read`  
+*Protected*
+
+Mark a single message as read. Only receiver can mark as read.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "message": {
+      "id": "uuid",
+      "is_read": true,
+      "read_at": "2026-02-04T15:35:00Z"
+    }
+  },
+  "message": "Message marked as read"
+}
+```
+
+### 7. Mark Conversation as Read
+**PATCH** `/messages/conversations/:conversationId/read`  
+*Protected*
+
+Mark all unread messages in conversation as read for current user.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "markedCount": 3
+  },
+  "message": "3 messages marked as read"
+}
+```
+
+### 8. Delete Message
+**DELETE** `/messages/:messageId`  
+*Protected*
+
+Soft delete a message. Only sender can delete their own messages.
+
+Response:
+```json
+{
+  "success": true,
+  "data": null,
+  "message": "Message deleted successfully"
+}
+```
+
+### 9. Archive Conversation
+**PATCH** `/messages/conversations/:conversationId/archive`  
+*Protected*
+
+Archive conversation for current user. Doesn't affect other participant.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "conversation": {
+      "id": "uuid",
+      "host_archived": true,
+      "guest_archived": false
+    }
+  },
+  "message": "Conversation archived"
+}
+```
+
+### 10. Unarchive Conversation
+**PATCH** `/messages/conversations/:conversationId/unarchive`  
+*Protected*
+
+Unarchive a previously archived conversation.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "conversation": {
+      "id": "uuid",
+      "host_archived": false
+    }
+  },
+  "message": "Conversation unarchived"
+}
+```
+
+### 11. Get Unread Message Count
+**GET** `/messages/unread-count`  
+*Protected*
+
+Get total unread message count for current user.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "unreadCount": 5
+  }
+}
+```
+
+---
+
+## Payment & Commission Endpoints
+
+### 1. Get Commission Rate
+**GET** `/payments/commission/rate`  
+*Public*
+
+Get current platform commission rate.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "commission_rate": 15,
+    "description": "Platform charges 15% commission on confirmed bookings"
+  }
+}
+```
+
+### 2. Calculate Commission Preview
+**POST** `/payments/commission/calculate`  
+*Public*
+
+Calculate commission for a booking amount before confirming.
+
+Request:
+```json
+{
+  "booking_amount": 1000.00
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "calculation": {
+      "booking_amount": 1000.00,
+      "commission_rate": 15,
+      "commission_amount": 150.00,
+      "host_net_amount": 850.00,
+      "currency": "USD"
+    }
+  }
+}
+```
+
+### 3. Create Commission for Booking
+**POST** `/payments/commission/booking/:bookingId`  
+*Protected - Auto-triggered on booking confirmation*
+
+Create commission transaction when host confirms booking.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "transaction": {
+      "id": "uuid",
+      "booking_id": "uuid",
+      "transaction_type": "host_commission",
+      "booking_total": 1000.00,
+      "commission_rate": 15,
+      "commission_amount": 150.00,
+      "net_amount": 850.00,
+      "status": "pending",
+      "payment_due_date": "2026-03-12",
+      "transaction_reference": "TXN-20260304-A1B2C3D4",
+      "created_at": "2026-03-05T12:00:00Z"
+    }
+  }
+}
+```
+
+### 4. Get Host Earnings Summary
+**GET** `/payments/host/earnings`  
+*Protected - Host*
+
+Get complete financial overview for authenticated host.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "earnings": {
+      "total_bookings": 25,
+      "total_gross_earnings": 12500.00,
+      "total_commission_paid": 1875.00,
+      "total_net_earnings": 10625.00,
+      "pending_commission": 450.00,
+      "total_payouts_received": 10175.00,
+      "commission_rate": 15
+    }
+  }
+}
+```
+
+### 5. Get Pending Commissions
+**GET** `/payments/host/pending-commissions`  
+*Protected - Host*
+
+Get all unpaid commission transactions for authenticated host.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "transactions": [
+      {
+        "id": "uuid",
+        "booking_id": "uuid",
+        "listing_title": "Beach Villa with Ocean View",
+        "booking_total": 1000.00,
+        "commission_amount": 150.00,
+        "net_amount": 850.00,
+        "payment_due_date": "2026-03-12",
+        "check_in_date": "2026-03-01",
+        "check_out_date": "2026-03-05",
+        "status": "pending"
+      }
+    ],
+    "total_amount": 450.00,
+    "currency": "USD"
+  }
+}
+```
+
+### 6. Get Host Transactions
+**GET** `/payments/host/transactions`  
+*Protected - Host*
+
+Get paginated list of payment transactions for authenticated host.
+
+Query Parameters:
+- `type` (optional): Filter by transaction_type (host_commission, host_payout, etc.)
+- `status` (optional): Filter by status (pending, completed, failed, etc.)
+- `limit` (optional): Results per page (default: 50, max: 100)
+- `offset` (optional): Pagination offset (default: 0)
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "transactions": [
+      {
+        "id": "uuid",
+        "booking_id": "uuid",
+        "transaction_type": "host_commission",
+        "booking_total": 1000.00,
+        "commission_amount": 150.00,
+        "net_amount": 850.00,
+        "status": "completed",
+        "payment_due_date": "2026-03-12",
+        "payment_completed_at": "2026-03-10T14:30:00Z",
+        "transaction_reference": "TXN-20260304-A1B2C3D4",
+        "listing": {
+          "id": "uuid",
+          "title": "Beach Villa"
+        },
+        "booking": {
+          "check_in_date": "2026-03-01",
+          "check_out_date": "2026-03-05"
+        }
+      }
+    ],
+    "total": 25,
+    "limit": 50,
+    "offset": 0
+  }
+}
+```
+
+### 7. Pay Commission
+**POST** `/payments/commission/:transactionId/pay`  
+*Protected - Host*
+
+Mark commission as paid by host. Only the host who owns the transaction can process payment.
+
+Request:
+```json
+{
+  "payment_method": "card",
+  "payment_intent_id": "pi_stripe_123abc",
+  "payment_provider": "stripe"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "transaction": {
+      "id": "uuid",
+      "status": "completed",
+      "payment_method": "card",
+      "payment_provider": "stripe",
+      "payment_intent_id": "pi_stripe_123abc",
+      "payment_completed_at": "2026-03-10T14:30:00Z",
+      "transaction_reference": "TXN-20260304-A1B2C3D4"
+    },
+    "message": "Commission payment processed successfully"
+  }
+}
+```
+
+### 8. Get Transaction Details
+**GET** `/payments/transactions/:transactionId`  
+*Protected - Host or Guest*
+
+Get details of a specific payment transaction. User must be either the host or guest associated with the transaction.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "transaction": {
+      "id": "uuid",
+      "booking_id": "uuid",
+      "listing_id": "uuid",
+      "host_id": "uuid",
+      "guest_id": "uuid",
+      "transaction_type": "host_commission",
+      "booking_total": 1000.00,
+      "commission_rate": 15,
+      "commission_amount": 150.00,
+      "net_amount": 850.00,
+      "currency": "USD",
+      "status": "completed",
+      "payment_method": "card",
+      "payment_provider": "stripe",
+      "payment_intent_id": "pi_stripe_123abc",
+      "transaction_reference": "TXN-20260304-A1B2C3D4",
+      "payment_due_date": "2026-03-12",
+      "payment_completed_at": "2026-03-10T14:30:00Z",
+      "created_at": "2026-03-05T12:00:00Z",
+      "metadata": {
+        "listing_title": "Beach Villa",
+        "check_in_date": "2026-03-01",
+        "check_out_date": "2026-03-05"
+      }
+    }
+  }
+}
+```
+
+---
+
 ## Notes
 
 - All timestamps are in ISO 8601 format (UTC)
@@ -994,3 +1541,6 @@ Response:
 - Coordinates must be valid latitude/longitude values
 - Booking prices automatically calculated (base × nights + cleaning + 3% service fee)
 - Availability is checked in real-time to prevent double-booking
+- **Platform commission: 15% charged to hosts on confirmed bookings**
+- **Commission payment due: 7 days after guest check-out**
+- **Transaction references: Unique format TXN-YYYYMMDD-XXXXXXXX**

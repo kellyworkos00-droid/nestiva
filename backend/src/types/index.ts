@@ -208,3 +208,110 @@ export interface CreateReviewPayload {
   comment: string;
   photos?: Express.Multer.File[];
 }
+
+// Message and Conversation Types
+export interface Conversation {
+  id: string;
+  listing_id: string;
+  host_id: string;
+  guest_id: string;
+  booking_id?: string;
+  status: 'active' | 'archived' | 'blocked';
+  last_message_at?: Date;
+  last_message_preview?: string;
+  host_archived: boolean;
+  guest_archived: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  message_type: 'text' | 'booking_request' | 'booking_confirmed' | 'booking_cancelled' | 'system';
+  is_read: boolean;
+  read_at?: Date;
+  attachments: string[];
+  metadata: Record<string, any>;
+  is_deleted: boolean;
+  deleted_at?: Date;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface ConversationSummary extends Conversation {
+  listing_title: string;
+  listing_photos: string[];
+  host_first_name: string;
+  host_last_name: string;
+  host_profile_picture?: string;
+  guest_first_name: string;
+  guest_last_name: string;
+  guest_profile_picture?: string;
+  host_unread_count: number;
+  guest_unread_count: number;
+}
+
+export interface CreateConversationData {
+  listingId: string;
+  hostId: string;
+  guestId: string;
+  bookingId?: string;
+}
+
+export interface CreateMessageData {
+  conversationId: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  messageType?: 'text' | 'booking_request' | 'booking_confirmed' | 'booking_cancelled' | 'system';
+  attachments?: string[];
+  metadata?: Record<string, any>;
+}
+
+// Payment Transaction Types
+export interface PaymentTransaction {
+  id: string;
+  booking_id: string;
+  listing_id: string;
+  host_id: string;
+  guest_id: string;
+  transaction_type: 'host_commission' | 'guest_service_fee' | 'host_payout' | 'refund_to_guest' | 'refund_from_host';
+  booking_total: number;
+  commission_rate: number;
+  commission_amount: number;
+  net_amount: number;
+  currency: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'cancelled';
+  payment_method?: string;
+  payment_provider?: string;
+  payment_intent_id?: string;
+  transaction_reference: string;
+  payment_due_date?: Date;
+  payment_completed_at?: Date;
+  description?: string;
+  metadata?: Record<string, any>;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface CreatePaymentTransactionData {
+  booking_id: string;
+  listing_id: string;
+  host_id: string;
+  guest_id: string;
+  transaction_type: string;
+  booking_total: number;
+  commission_rate: number;
+  commission_amount: number;
+  net_amount: number;
+  currency?: string;
+  status?: string;
+  payment_due_date?: Date;
+  description?: string;
+  metadata?: Record<string, any>;
+}
+
