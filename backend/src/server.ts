@@ -37,14 +37,15 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import listingRoutes from './routes/listingRoutes';
 import bookingRoutes from './routes/bookingRoutes';
+import reviewRoutes from './routes/reviewRoutes';
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/listings', listingRoutes);
 app.use('/api/v1/bookings', bookingRoutes);
+app.use('/api/v1/reviews', reviewRoutes);
 
 // TODO: Implement remaining routes
-// app.use('/api/v1/reviews', reviewRoutes);
 // app.use('/api/v1/messages', messageRoutes);
 // app.use('/api/v1/payments', paymentRoutes);
 

@@ -791,6 +791,198 @@ Response:
 
 ---
 
+## Review Endpoints
+
+### 1. Create Review
+**POST** `/reviews`  
+*Protected - Guest or Host*
+
+Request:
+```json
+{
+  "booking_id": "uuid",
+  "overall_rating": 5.0,
+  "cleanliness_rating": 5.0,
+  "accuracy_rating": 4.5,
+  "communication_rating": 5.0,
+  "location_rating": 4.5,
+  "value_rating": 5.0,
+  "check_in_rating": 5.0,
+  "review_text": "Amazing stay! The host was very responsive and the place was exactly as described."
+}
+```
+
+Response (201):
+```json
+{
+  "success": true,
+  "data": {
+    "review": {
+      "id": "uuid",
+      "booking_id": "uuid",
+      "listing_id": "uuid",
+      "reviewer_id": "uuid",
+      "reviewee_id": "uuid",
+      "review_type": "guest_to_host",
+      "overall_rating": 5.0,
+      "cleanliness_rating": 5.0,
+      "review_text": "Amazing stay!...",
+      "is_published": true,
+      "created_at": "2026-02-04T12:00:00Z"
+    }
+  }
+}
+```
+
+**Note**: Category ratings (cleanliness, accuracy, etc.) only available for guest-to-host reviews.
+
+### 2. Get Review
+**GET** `/reviews/:reviewId`  
+*Public*
+
+### 3. Get Listing Reviews
+**GET** `/reviews/listing/:listingId?limit=20&offset=0`  
+*Public*
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "reviews": [ ... ],
+    "total": 47
+  }
+}
+```
+
+### 4. Get Listing Ratings
+**GET** `/reviews/listing/:listingId/ratings`  
+*Public*
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "ratings": {
+      "overall_rating": 4.85,
+      "cleanliness_rating": 4.9,
+      "accuracy_rating": 4.8,
+      "communication_rating": 4.95,
+      "location_rating": 4.7,
+      "value_rating": 4.8,
+      "check_in_rating": 4.9,
+      "total_reviews": 47
+    }
+  }
+}
+```
+
+### 5. Get My Reviews
+**GET** `/reviews/my-reviews?limit=20&offset=0`  
+*Protected - Any User*
+
+Get reviews written by authenticated user.
+
+### 6. Get User Reviews Received
+**GET** `/reviews/user/:userId/received?reviewType=guest_to_host&limit=20&offset=0`  
+*Public*
+
+Query Parameters:
+- `reviewType` (optional): guest_to_host or host_to_guest
+
+### 7. Get Host Rating
+**GET** `/reviews/host/:hostId/rating`  
+*Public*
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "rating": {
+      "average_rating": 4.85,
+      "total_reviews": 47
+    }
+  }
+}
+```
+
+### 8. Respond to Review
+**POST** `/reviews/:reviewId/respond`  
+*Protected - Reviewee*
+
+Request:
+```json
+{
+  "response_text": "Thank you for the wonderful review! It was a pleasure hosting you."
+}
+```
+
+### 9. Flag Review
+**POST** `/reviews/:reviewId/flag`  
+*Protected - Any User*
+
+Request:
+```json
+{
+  "reason": "Contains inappropriate language or personal attacks"
+}
+```
+
+### 10. Check Can Review
+**GET** `/reviews/booking/:bookingId/can-review`  
+*Protected - Guest or Host*
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "canReview": true
+  }
+}
+```
+
+Or:
+```json
+{
+  "success": true,
+  "data": {
+    "canReview": false,
+    "reason": "You have already reviewed this booking"
+  }
+}
+```
+
+### 11. Get Pending Reviews
+**GET** `/reviews/pending`  
+*Protected - Any User*
+
+Get list of completed bookings that user hasn't reviewed yet.
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "pending_reviews": [
+      {
+        "booking_id": "uuid",
+        "listing_id": "uuid",
+        "check_in_date": "2026-01-15",
+        "check_out_date": "2026-01-20",
+        "is_guest": true,
+        "is_host": false
+      }
+    ],
+    "count": 1
+  }
+}
+```
+
+---
+
 ## Notes
 
 - All timestamps are in ISO 8601 format (UTC)
